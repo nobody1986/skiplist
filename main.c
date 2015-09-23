@@ -65,7 +65,7 @@ real    0m57.093s
 user    0m0.015s
 sys     0m0.000s
  * 
- * ====================skip=====================
+ * ====================no skip=====================
  * 
 HEIGHT:1
 COUNT:100000
@@ -74,6 +74,15 @@ real    76m35.232s
 user    0m0.015s
 sys     0m0.000s
 
+ * ==========================use data file =================
+HEIGHT:11
+COUNT:149868
+
+real	0m7.657s
+user	0m6.948s
+sys	0m0.712s
+ * 
+ * 
  */
 int main(int argc, char** argv) {
     struct SkipList *list = skipList_new();
@@ -86,7 +95,8 @@ int main(int argc, char** argv) {
         snprintf(data, 15, "data%010d", i);
         skipListNode_insert(list, key, data);
 //        char *ret = (char *) skipListNode_find(list, key);
-        //                        printf("get => %s\n",ret);
+//        printf("get => %s\n",ret);
+//        free(ret);
         //    SkipList_print(list);
     }
     for (int n = 0; n < 100; ++n) {
@@ -98,6 +108,8 @@ int main(int argc, char** argv) {
             //            skipListNode_insert(list, key, data);
             char *ret = (char *) skipListNode_find(list, key);
 //            printf("get => %s\n", ret);
+            free(key);
+            free(ret);
         }
     }
     SkipList_print(list);

@@ -1,9 +1,4 @@
 #include "skiplist.h"
-#include <stdlib.h>
-#include <malloc.h>
-#include <string.h>
-#include <sys/time.h>
-#include <math.h>
 
 struct SkipList *skipList_new() {
     struct SkipList *list = (struct SkipList *) malloc(sizeof (struct SkipList));
@@ -11,13 +6,22 @@ struct SkipList *skipList_new() {
     list->count = 0;
     list->top = skipListSpecialNode_new(NODE_MIN);
     list->head = list->top;
+    list->dataFile = fopen(SKIPLIST_DATA_FILE, "ab+");
+    fseek(list->dataFile, 0, SEEK_END);
     return list;
 }
 
-struct SkipListNode *skipListNode_new(unsigned char *key, void *data) {
+struct SkipListNode *skipListNode_new(struct SkipList *list, unsigned char *key, void *data) {
     struct SkipListNode *node = (struct SkipListNode *) malloc(sizeof (struct SkipListNode));
     node->key = key;
-    node->data = data;
+    int len = 0;
+    if(data!=NULL){
+        len = strlen(data);
+        fseek(list->dataFile, 0, SEEK_END);
+        node->data = ftell(list->dataFile);
+        fwrite(&len, sizeof (int), 1, list->dataFile);
+        fwrite(data, sizeof (char), strlen(data), list->dataFile);
+    }
     node->down = NULL;
     node->next = NULL;
     node->type = NODE_NORMAL;
@@ -27,7 +31,7 @@ struct SkipListNode *skipListNode_new(unsigned char *key, void *data) {
 struct SkipListNode *skipListSpecialNode_new(enum SkipListNodeType type) {
     struct SkipListNode *node = (struct SkipListNode *) malloc(sizeof (struct SkipListNode));
     node->key = NULL;
-    node->data = NULL;
+    node->data = 0;
     node->down = NULL;
     node->next = NULL;
     node->type = type;
@@ -36,24 +40,24 @@ struct SkipListNode *skipListSpecialNode_new(enum SkipListNodeType type) {
 
 void skipListNode_insert(struct SkipList *list, unsigned char *key, void *data) {
     struct SkipListNode *tmp = NULL;
-    struct SkipListNode *newNode = skipListNode_new(key, data);
+    struct SkipListNode *newNode = skipListNode_new(list, key, data);
     int height = list->height;
     int level = SkipList_level(list);
     struct SkipListNode **everyLevel = NULL;
     everyLevel = (struct SkipListNode **) malloc(sizeof (struct SkipListNode *) * (height + 1));
     if (list->head->next == NULL) {
-        list->head->next = skipListNode_new(key, data);
+        list->head->next = newNode;
         list->count++;
     } else {
         tmp = list->top;
 
         while (height >= 1) {
-//                printf("%s == %s == %d\n", key,tmp->next->key,strcmp(key, tmp->next->key));
-            while (    tmp->next != NULL && ( strcmp(key, tmp->next->key) > 0)) {
+            //                printf("%s == %s == %d\n", key,tmp->next->key,strcmp(key, tmp->next->key));
+            while (tmp->next != NULL && (strcmp(key, tmp->next->key) > 0)) {
                 tmp = tmp->next;
             }
             *(everyLevel + height - 1) = tmp;
-            if(tmp->down!=NULL){
+            if (tmp->down != NULL) {
                 tmp = tmp->down;
             }
             --height;
@@ -69,7 +73,7 @@ void skipListNode_insert(struct SkipList *list, unsigned char *key, void *data) 
             now = level - 1;
         }
         for (int i = 1; i <= now; ++i) {
-            newNode = skipListNode_new(key, data);
+            newNode = skipListNode_new(list, key, NULL);
             newNode->down = tmp->next;
             tmp = *(everyLevel + i);
             newNode->next = tmp->next;
@@ -77,7 +81,7 @@ void skipListNode_insert(struct SkipList *list, unsigned char *key, void *data) 
             list->count++;
         }
         if (level == list->height) {
-            newNode = skipListNode_new(key, data);
+            newNode = skipListNode_new(list, key, NULL);
             newNode->down = tmp->next;
             tmp = skipListSpecialNode_new(NODE_MIN);
             tmp->down = list->top;
@@ -90,6 +94,17 @@ void skipListNode_insert(struct SkipList *list, unsigned char *key, void *data) 
     free(everyLevel);
 }
 
+char *readNodeData(struct SkipList *list, struct SkipListNode *node) {
+    char *data = NULL;
+    int len = 0;
+    fseek(list->dataFile, node->data, SEEK_SET);
+    fread(&len, sizeof (int), 1, list->dataFile);
+    data = (char *) malloc(sizeof (char) * (len + 1));
+    memset(data, 0, sizeof (char) * (len + 1));
+    fread(data, sizeof (char), len, list->dataFile);
+    return data;
+}
+
 void *skipListNode_find(struct SkipList *list, unsigned char *key) {
     struct SkipListNode *tmp = NULL;
     int height = list->height;
@@ -100,8 +115,8 @@ void *skipListNode_find(struct SkipList *list, unsigned char *key) {
         tmp = list->top;
         while (height > 1) {
             while (tmp->next != NULL) {
-                if ((strcmp(key, tmp->next->key)< 0) ||
-                        ( tmp->key!= NULL && strcmp(key, tmp->key) == 0)) {
+                if ((strcmp(key, tmp->next->key) < 0) ||
+                        (tmp->key != NULL && strcmp(key, tmp->key) == 0)) {
                     break;
                 }
                 tmp = tmp->next;
@@ -112,44 +127,44 @@ void *skipListNode_find(struct SkipList *list, unsigned char *key) {
         if (tmp->down != NULL) {
             tmp = tmp->down;
         }
-        while ( 
-                ( tmp->key==NULL || (r = strcmp(key, tmp->key)) > 0) &&
+        while (
+                (tmp->key == NULL || (r = strcmp(key, tmp->key)) > 0) &&
                 tmp->next != NULL
                 ) {
             tmp = tmp->next;
         }
         if (r == 0) {
-            return tmp->data;
+            return readNodeData(list, tmp);
         }
     }
     return NULL;
 }
 
 int SkipList_level(struct SkipList *list) {
-//    return 0;
-    unsigned int ran = 0;// rand();
+    //    return 0;
+    unsigned int ran = 0; // rand();
     int height = list->height;
     int level = 0;
-//    while(level <= height){
-//        if(ran % (unsigned int)pow(2,level)!=0){
-//            break;
-//        }
-//        ++level;
-//    }
-struct timeval t_val;
+    //    while(level <= height){
+    //        if(ran % (unsigned int)pow(2,level)!=0){
+    //            break;
+    //        }
+    //        ++level;
+    //    }
+    struct timeval t_val;
 
-    while(1){
-    	gettimeofday(&t_val, NULL);
-        srand((unsigned)t_val.tv_usec);
+    while (1) {
+        gettimeofday(&t_val, NULL);
+        srand((unsigned) t_val.tv_usec);
         ran = rand();
-//        printf("rand:%d\n",ran);
-        if(ran % 3 > 1){
+        //        printf("rand:%d\n",ran);
+        if (ran % 3 > 1) {
             ++level;
-        }else{
+        } else {
             break;
         }
     }
-    if(level > height){
+    if (level > height) {
         level = height;
     }
     return level;
@@ -176,27 +191,27 @@ void SkipListNode_free(struct SkipListNode *node) {
     free(node);
 }
 
-void SkipList_print(struct SkipList *list){
+void SkipList_print(struct SkipList *list) {
     struct SkipListNode *tmp = list->top;
     struct SkipListNode *tmp1 = NULL;
     struct SkipListNode *tmp2 = NULL;
     int height = list->height;
-    printf("HEIGHT:%d\n",height);
-    printf("COUNT:%d\n",list->count);
-//    while (tmp != NULL) {
-//        tmp1 = tmp->down;
-//        printf("LEVEL%d:",height-1);
-//        while (tmp != NULL) {
-//            tmp2 = tmp->next;
-//            if(tmp->type == NODE_MIN){
-//                printf("MIN\t");
-//            }else{
-//                printf("%s\t",tmp->key);
-//            }
-//            tmp = tmp2;
-//        }
-//        printf("\n");
-//        tmp = tmp1;
-//        --height;
-//    }
+    printf("HEIGHT:%d\n", height);
+    printf("COUNT:%d\n", list->count);
+    //    while (tmp != NULL) {
+    //        tmp1 = tmp->down;
+    //        printf("LEVEL%d:",height-1);
+    //        while (tmp != NULL) {
+    //            tmp2 = tmp->next;
+    //            if(tmp->type == NODE_MIN){
+    //                printf("MIN\t");
+    //            }else{
+    //                printf("%s\t",tmp->key);
+    //            }
+    //            tmp = tmp2;
+    //        }
+    //        printf("\n");
+    //        tmp = tmp1;
+    //        --height;
+    //    }
 }
