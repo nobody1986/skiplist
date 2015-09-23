@@ -126,6 +126,7 @@ void *skipListNode_find(struct SkipList *list, unsigned char *key) {
 }
 
 int SkipList_level(struct SkipList *list) {
+//    return 0;
     unsigned int ran = 0;// rand();
     int height = list->height;
     int level = 0;

@@ -52,6 +52,28 @@ COUNT:149770
 real	1m2.052s
 user	0m55.911s
 sys	0m0.921s
+ * 
+ * 
+ * 
+ * 
+write 100000 read 100 * 100000
+ * 
+HEIGHT:193
+COUNT:118528
+
+real    0m57.093s
+user    0m0.015s
+sys     0m0.000s
+ * 
+ * ====================skip=====================
+ * 
+HEIGHT:1
+COUNT:100000
+
+real    76m35.232s
+user    0m0.015s
+sys     0m0.000s
+
  */
 int main(int argc, char** argv) {
     struct SkipList *list = skipList_new();

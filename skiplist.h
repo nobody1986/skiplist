@@ -7,26 +7,43 @@ enum SkipListNodeType {
     NODE_MAX,
     NODE_NORMAL
 };
-enum SkipListNodeDataType {
-    TypeString,
-    TypeInt,
-};
+//enum SkipListNodeDataType {
+//    TypeString,
+//    TypeInt,
+//};
 
 struct SkipListNode {
     enum SkipListNodeType type;
-    int next;
-    int down;
-    char type;
-    int key;
-    int data;
+    struct SkipListNode *next;
+    struct SkipListNode *down;
+    unsigned char *key;
+    void *data;
 };
 
 struct SkipList {
     int height;
     int count;
-    void *head;
-    void *top;
+    struct SkipListNode *head;
+    struct SkipListNode *top;
 };
+
+
+
+//struct SkipListNode {
+//    enum SkipListNodeType type;
+//    int next;
+//    int down;
+//    char type;
+//    int key;
+//    int data;
+//};
+//
+//struct SkipList {
+//    int height;
+//    int count;
+//    void *head;
+//    void *top;
+//};
 
 
 struct SkipList *skipList_new();
