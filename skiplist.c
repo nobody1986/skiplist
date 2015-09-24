@@ -11,6 +11,7 @@ struct SkipList *skipList_new() {
     list->count = 0;
     list->top = skipListSpecialNode_new(NODE_MIN);
     list->head = list->top;
+    list->dataFile = SKIPLIST_DATA_FILE;
     return list;
 }
 

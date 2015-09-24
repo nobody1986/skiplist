@@ -1,6 +1,7 @@
 #define NODES_IN_LEVEL 20
 #define NODES_PER_LEVEL_INIT 100
 #define NODES_PER_LEVEL_STEP 100
+#define SKIPLIST_DATA_FILE  "data.dat"
 
 enum SkipListNodeType {
     NODE_MIN,
@@ -25,6 +26,7 @@ struct SkipList {
     int count;
     struct SkipListNode *head;
     struct SkipListNode *top;
+    char *dataFile;
 };
 
 
