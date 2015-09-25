@@ -27,6 +27,7 @@ struct SkipListNode *skipListNode_new(struct SkipList *list, unsigned char *key,
     }
     node->down = NULL;
     node->next = NULL;
+    node->deleted = 0;
     node->type = NODE_NORMAL;
     return node;
 }
@@ -38,6 +39,7 @@ struct SkipListNode *skipListSpecialNode_new(enum SkipListNodeType type) {
     node->down = NULL;
     node->next = NULL;
     node->type = type;
+    node->deleted = 0;
     return node;
 }
 
@@ -109,6 +111,14 @@ void skipListNode_insert(struct SkipList *list, unsigned char *key, void *data) 
 //}
 
 void *skipListNode_find(struct SkipList *list, unsigned char *key) {
+    SkipListNode *tmp = skipListNode_findNode(list, key, 0);
+    if (tmp == NULL) {
+        return tmp;
+    }
+    return readNodeData(list->dataFile, tmp->data);
+}
+
+SkipListNode *skipListNode_findNode(struct SkipList *list, unsigned char *key, short isRange) {
     struct SkipListNode *tmp = NULL;
     int height = list->height;
     int r = 1;
@@ -137,7 +147,10 @@ void *skipListNode_find(struct SkipList *list, unsigned char *key) {
             tmp = tmp->next;
         }
         if (r == 0) {
-            return readNodeData(list->dataFile, tmp->data);
+            return tmp;
+        }
+        if (isRange == 1 && r < 0) {
+            return tmp;
         }
     }
     return NULL;
@@ -203,22 +216,24 @@ void SkipList_print(struct SkipList *list) {
     int height = list->height;
     printf("HEIGHT:%d\n", height);
     printf("COUNT:%d\n", list->count);
-    //    while (tmp != NULL) {
-    //        tmp1 = tmp->down;
-    //        printf("LEVEL%d:",height-1);
-    //        while (tmp != NULL) {
-    //            tmp2 = tmp->next;
-    //            if(tmp->type == NODE_MIN){
-    //                printf("MIN\t");
-    //            }else{
-    //                printf("%s\t",tmp->key);
-    //            }
-    //            tmp = tmp2;
-    //        }
-    //        printf("\n");
-    //        tmp = tmp1;
-    //        --height;
-    //    }
+    printf("TOP:%p\n", list->top);
+    printf("HEAD:%p\n", list->head);
+    while (tmp != NULL) {
+        tmp1 = tmp->down;
+        printf("LEVEL%d[%p]:", height - 1, tmp);
+        while (tmp != NULL) {
+            tmp2 = tmp->next;
+            if (tmp->type == NODE_MIN) {
+                printf("MIN\t");
+            } else {
+                printf("%s\t", tmp->key);
+            }
+            tmp = tmp2;
+        }
+        printf("\n");
+        tmp = tmp1;
+        --height;
+    }
 }
 
 long skipListStoreNode_new(struct SkipList *list, unsigned char *key, long data) {
@@ -250,7 +265,7 @@ struct SkipListNodeStore *readNodeFromFile(FILE *fp, long *pos, char **key) {
         return NULL;
     }
     *key = (char *) malloc(sizeof (char) * (node->len + 1));
-    memset(*key,0,sizeof (char) * (node->len + 1));
+    memset(*key, 0, sizeof (char) * (node->len + 1));
     ret = fread(*key, sizeof (char), node->len, fp);
     if (ret < node->len) {
         free(node);
@@ -276,6 +291,7 @@ void saveNodesToFile(struct SkipList *list) {
     struct SkipListNode *tmp = list->head;
     while (tmp != NULL) {
         if (tmp->type == NODE_NORMAL && tmp->deleted == 0) {
+            printf("stored => %s\n", tmp->key);
             skipListStoreNode_new(list, tmp->key, tmp->data);
         }
         tmp = tmp->next;
@@ -288,6 +304,7 @@ struct SkipListNode *skipListNodeReverse_new(struct SkipList *list, unsigned cha
     node->data = data;
     node->down = NULL;
     node->next = NULL;
+    node->deleted = 0;
     node->type = NODE_NORMAL;
     return node;
 }
@@ -352,12 +369,50 @@ void reverseNodesFromFile(struct SkipList *list) {
     long pos = 0;
     struct SkipListNodeStore *node = NULL;
     while ((node = readNodeFromFile(list->StoreNode, &pos, &key)) != NULL) {
-//        printf("key => %d\n",node->data);
+        printf("key => %s\n", key);
         skipListNodeReverse_insert(list, key, node->data);
-        key=NULL;
-//        free(key);
+        key = NULL;
+        //        free(key);
     }
     fclose(list->StoreNode);
-//    list->StoreNode = fopen(SKIPLIST_NODES_FILE, "wb+");
+    list->StoreNode = fopen(SKIPLIST_NODES_FILE, "wb+");
     fseek(list->StoreNode, 0, SEEK_SET);
+}
+
+int skipList_range(struct SkipList *list, unsigned char *start, unsigned char *end, skipList_callback callback, void *userdata) {
+    SkipListNode *tmp = skipListNode_findNode(list, start, 1);
+    int len = 0;
+    char *data = NULL;
+    if (tmp == NULL) {
+        return tmp;
+    }
+    while (tmp != NULL && strcmp(end, tmp->key) >= 0) {
+        data = readNodeData(list->dataFile, tmp->data);
+        if (data != NULL && callback != NULL) {
+            callback(tmp->key, data, userdata);
+            ++len;
+        }
+        tmp = tmp->next;
+    }
+    return len;
+}
+
+int skipList_findn(struct SkipList *list, unsigned char *key, int number, skipList_callback callback, void *userdata) {
+    SkipListNode *tmp = skipListNode_findNode(list, key, 1);
+    int len = 0;
+    int n = 0;
+    char *data = NULL;
+    if (tmp == NULL) {
+        return tmp;
+    }
+    while (tmp != NULL && n < number) {
+        data = readNodeData(list->dataFile, tmp->data);
+        if (data != NULL && callback != NULL) {
+            callback(tmp->key, data, userdata);
+            ++len;
+        }
+        ++n;
+        tmp = tmp->next;
+    }
+    return len;
 }

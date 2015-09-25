@@ -84,37 +84,45 @@ sys	0m0.712s
  * 
  * 
  */
+
+void callback(unsigned char *key, unsigned char *data, void *userdata) {
+    
+}
+
 int main(int argc, char** argv) {
     struct SkipList *list = skipList_new();
     char *key = NULL;
     char *data = NULL;
-//    for (int i = 0; i < 100; ++i) {
-//        key = (char *) malloc(sizeof (char) * 16);
-//        data = (char *) malloc(sizeof (char) * 16);
-//        snprintf(key, 15, "key%010d", i);
-//        snprintf(data, 15, "data%010d", i);
-//        skipListNode_insert(list, key, data);
-////        char *ret = (char *) skipListNode_find(list, key);
-////        printf("get => %s\n",ret);
-////        free(ret);
-//        //    SkipList_print(list);
-//    }
     reverseNodesFromFile(list);
-    for (int n = 0; n < 100; ++n) {
-        for (int i = 0; i < 100; ++i) {
-            key = (char *) malloc(sizeof (char) * 16);
-            //            data = (char *) malloc(sizeof (char) * 16);
-            snprintf(key, 15, "key%010d", i);
-            //            sprintf(data, "data%d", i);
-            //            skipListNode_insert(list, key, data);
-            char *ret = (char *) skipListNode_find(list, key);
-            printf("get => %s\n", ret);
-            free(key);
-            free(ret);
-        }
-    }
-    SkipList_print(list);
-//    saveNodesToFile(list);
+    //    for (int i = 0; i < 100; ++i) {
+    //        key = (char *) malloc(sizeof (char) * 16);
+    //        data = (char *) malloc(sizeof (char) * 16);
+    //        snprintf(key, 15, "key%010d", i);
+    //        snprintf(data, 15, "data%010d", i);
+    //        skipListNode_insert(list, key, data);
+    ////        char *ret = (char *) skipListNode_find(list, key);
+    ////        printf("get => %s\n",ret);
+    ////        free(ret);
+    //        //    SkipList_print(list);
+    //    }
+//    for (int n = 0; n < 100; ++n) {
+//        for (int i = 0; i < 100; ++i) {
+//            key = (char *) malloc(sizeof (char) * 16);
+//            //            data = (char *) malloc(sizeof (char) * 16);
+//            snprintf(key, 15, "key%010d", i);
+//            //            sprintf(data, "data%d", i);
+//            //            skipListNode_insert(list, key, data);
+//            char *ret = (char *) skipListNode_find(list, key);
+//            printf("get => %s\n", ret);
+//            free(key);
+//            free(ret);
+//        }
+//    }
+    key = snprintf(key, 15, "key%010d", 50);
+    char *end = snprintf(key, 15, "key%010d", 60);
+    
+    //    SkipList_print(list);
+    saveNodesToFile(list);
     skipList_free(list);
     return (EXIT_SUCCESS);
 }
