@@ -10,6 +10,7 @@
 #define NODES_PER_LEVEL_INIT 100
 #define NODES_PER_LEVEL_STEP 100
 #define SKIPLIST_DATA_FILE "data.dat"
+#define SKIPLIST_NODES_FILE "nodes.node"
 
 enum SkipListNodeType {
     NODE_MIN,
@@ -28,6 +29,13 @@ struct SkipListNode {
     struct SkipListNode *down;
     unsigned char *key;
     long data;
+    short deleted;
+};
+
+struct SkipListNodeStore {
+    long data;
+    short deleted;
+    short len;
 };
 
 struct SkipList {
@@ -36,25 +44,10 @@ struct SkipList {
     struct SkipListNode *head;
     struct SkipListNode *top;
     FILE *dataFile;
+    FILE *StoreNode;
 };
 
 
-
-//struct SkipListNode {
-//    enum SkipListNodeType type;
-//    int next;
-//    int down;
-//    char type;
-//    int key;
-//    int data;
-//};
-//
-//struct SkipList {
-//    int height;
-//    int count;
-//    void *head;
-//    void *top;
-//};
 
 
 struct SkipList *skipList_new();
@@ -67,4 +60,12 @@ void SkipListNode_free(struct SkipListNode *);
 int SkipList_level(struct SkipList *);
 void SkipList_print(struct SkipList *);
 
-char *readNodeData(struct SkipList *, struct SkipListNode *);
+long skipListStoreNode_new(struct SkipList *, unsigned char *, long);
+long writeNodeToFile(FILE*, struct SkipListNodeStore *, char *);
+struct SkipListNodeStore *readNodeFromFile(FILE *, long *, char **);
+char *readNodeData(FILE *, long);
+
+void saveNodesToFile(struct SkipList *);
+struct SkipListNode *skipListNodeReverse_new(struct SkipList *, unsigned char *, long );
+void skipListNodeReverse_insert(struct SkipList *, unsigned char *, long);
+void reverseNodesFromFile(struct SkipList *);
