@@ -54,7 +54,7 @@ struct SkipList *skipList_new();
 struct SkipListNode *skipListNode_new(struct SkipList *, unsigned char *, void *);
 struct SkipListNode *skipListSpecialNode_new(enum SkipListNodeType);
 void skipListNode_insert(struct SkipList *, unsigned char *, void *);
-SkipListNode *skipListNode_findNode(struct SkipList *, unsigned char *,short);
+struct SkipListNode *skipListNode_findNode(struct SkipList *, unsigned char *,short);
 void *skipListNode_find(struct SkipList *, unsigned char *);
 void skipList_free(struct SkipList *);
 void SkipListNode_free(struct SkipListNode *);
@@ -72,6 +72,8 @@ void skipListNodeReverse_insert(struct SkipList *, unsigned char *, long);
 void reverseNodesFromFile(struct SkipList *);
 
 
-void (*skipList_callback)(unsigned char *, unsigned char *, void *);
+typedef void (*skipList_callback)(unsigned char *, unsigned char *, void *);
 int skipList_range(struct SkipList *, unsigned char *, unsigned char *, skipList_callback, void *);
 int skipList_findn(struct SkipList *, unsigned char *, int, skipList_callback, void *);
+long addToDataFile(struct SkipList *, void *) ;
+void skipListNode_del(struct SkipList *, unsigned char *);
